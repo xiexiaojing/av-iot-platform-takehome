@@ -1,0 +1,13 @@
+# 编译产物
+coding/build/
+*.class
+*.jar
+
+# Python
+__pycache__/
+*.pyc
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/

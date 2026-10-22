@@ -1,0 +1,39 @@
+# 可选 PoC：MQTT Broker + 模拟设备 + 推流容器
+# 需要 Docker 与 docker compose；仅用于验证架构假设，不入主干。
+services:
+  emqx:
+    image: emqx/emqx:5.8.6
+    container_name: c2d-emqx
+    ports:
+      - "1883:1883"     # MQTT
+      - "18083:18083"   # EMQX Dashboard
+    environment:
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: "public"   # 仅本地验证用
+    volumes:
+      - ./mosquitto/config.conf:/opt/emqx/etc/emqx.conf:ro
+    networks: [c2d]
+
+  device-simulator:
+    image: python:3.12-slim
+    container_name: c2d-device-sim
+    working_dir: /app
+    volumes:
+      - ./device_simulator.py:/app/device_simulator.py:ro
+    command: ["python", "/app/device_simulator.py"]
+    depends_on: [emqx]
+    networks: [c2d]
+
+  media-push:
+    image: linuxserver/ffmpeg:latest
+    container_name: c2d-media-push
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - >-
+        ffmpeg -re -f lavfi -i testsrc=size=1280x720:rate=25
+        -c:v libx264 -preset ultrafast -tune zerolatency -f flv rtmp://media-push/live/test
+    depends_on: [emqx]
+    networks: [c2d]
+
+networks:
+  c2d:
+    driver: bridge
