@@ -2,6 +2,8 @@
 
 **仓库名**：`av-iot-platform-takehome`　|　**主语言**：Java　|　**结构**：架构文档 + 可运行实现 + AI 代码审阅
 
+[![CI](https://github.com/xiexiaojing/av-iot-platform-takehome/actions/workflows/ci.yml/badge.svg)](https://github.com/xiexiaojing/av-iot-platform-takehome/actions/workflows/ci.yml)　CI 每次 push 自动执行：编译 + 单测 + 冒烟 + 并发幂等（Temurin JDK 17 / 21）
+
 **主语言：Java**（编码部分用 Java 17+ 语法编写，JDK 自带 `javac` 即可编译，不依赖 Maven/Gradle/外网；
 辅助语言：Shell（`scripts/smoke.sh`）、Python（`scripts/load_demo.py`））
 
