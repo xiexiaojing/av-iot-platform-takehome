@@ -10,6 +10,9 @@ jobs:
   verify:
     name: build + unit-test + smoke (JDK ${{ matrix.java }})
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coding
     strategy:
       fail-fast: false
       matrix:
