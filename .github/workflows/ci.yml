@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: build + unit-test + smoke (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['17', '21']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Compile (javac -Xlint:all)
+        run: ./build.sh
+
+      - name: Unit tests
+        run: java -cp build/classes c2d.ServiceTest
+
+      - name: Smoke test (上线 -> 下发 -> 终态 -> 幂等 -> 离线失败)
+        run: ./scripts/smoke.sh
+
+      - name: Concurrent idempotency check
+        run: |
+          java -cp build/classes c2d.ServerMain --port 18080 &
+          SERVER_PID=$!
+          sleep 2
+          python3 scripts/load_demo.py --url http://127.0.0.1:18080 --count 30
+          kill $SERVER_PID
