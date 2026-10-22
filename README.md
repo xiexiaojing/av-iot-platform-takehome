@@ -29,6 +29,7 @@
 | [coding/](coding/) | 第 6.B 部分：可运行的 Java 最小实现（HTTP + 内存态 + 幂等 + 超时 + 单测 + 冒烟） |
 | [optional-poc/](optional-poc/) | 可选加分：MQTT（EMQX）+ FFmpeg 推流验证的 docker-compose 骨架 |
 | [AI使用说明.md](AI使用说明.md) | 文档与代码分别说明 AI 参与方式、人工复核点 |
+| [LICENSE](LICENSE) | MIT |
 
 ## 快速验证（不需要任何外部依赖）
 
@@ -38,6 +39,8 @@ cd coding
 java -cp build/classes c2d.ServiceTest     # 16 个断言的单测
 ./scripts/smoke.sh            # 上线 -> 下发 -> 查终态 -> 幂等回放 -> 离线失败
 ```
+
+> 本仓库提交时的**实际运行输出**已贴在 [`coding/README.md` 第 0 节](coding/README.md)，可对照复现。
 
 并发幂等验证（同一 `idempotency_key` 并发 30 次，唯一 `command_id` 应为 1）：
 

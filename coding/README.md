@@ -4,6 +4,81 @@
 只用 JDK 自带能力（`com.sun.net.httpserver` + `java.net.http`），**不依赖 Maven/Gradle/任何三方库**，
 因此在没有外网、没有构建工具的机器上也能编译运行。
 
+## 0. 验证记录（本仓库提交时的实际运行输出）
+
+> 以下为在本仓库当前提交（`main`）上**实际执行**的输出，运行环境：macOS (arm64)、
+> `openjdk version "26.0.1" 2026-04-21`、仅 JDK 自带能力，无任何三方依赖。
+> 复现方式见第 2、3 节；任何一步失败都会以非 0 退出码结束。
+
+### 0.1 单元测试
+
+```
+$ ./build.sh
+compiled -> build/classes
+
+$ java -cp build/classes c2d.ServiceTest
+[case] 幂等映射
+  [ok]   两次下发都被受理
+  [ok]   同一幂等键返回同一 command_id
+  [ok]   第二次被标记为幂等回放
+  [ok]   内存中只产生一条指令
+[case] 幂等键冲突
+  [ok]   同键不同参数返回冲突
+  [ok]   冲突不产生新指令
+[case] 设备离线
+  [ok]   请求被受理（返回 command_id）
+  [ok]   指令状态为 FAILED
+  [ok]   错误码为 DEVICE_OFFLINE
+  [ok]   带有可读错误信息
+[case] 成功与超时
+  [ok]   刚下发时为 PENDING
+  [ok]   回执到达后变为 SUCCESS
+  [ok]   超时被置为 FAILED/TIMEOUT
+[case] 并发幂等
+  [ok]   全部请求都被受理
+  [ok]   并发下 command_id 完全一致
+  [ok]   并发下只落一条指令
+
+16 个断言, 0 个失败
+```
+
+### 0.2 冒烟脚本（上线 -> 下发 -> 查终态 -> 幂等回放 -> 离线失败）
+
+```
+$ ./scripts/smoke.sh
+== 1. 编译 ==
+compiled -> build/classes
+== 2. 启动服务 (port=18080) ==
+== 3. 设备上线 ==
+SMOKE OK: dev-smoke-1 已上线
+== 4. 下发指令 ==
+  {"command_id":"cmd_cfe4d18ca208dd5b","device_id":"dev-smoke-1","action":"reboot","status":"PENDING","error":"","error_message":"","idempotent_replay":false,"created_ms":1792638921610,"updated_ms":1792638921610,"deadline_ms":1792638924610}
+SMOKE OK: command_id=cmd_cfe4d18ca208dd5b
+== 5. 轮询终态，期望 SUCCESS ==
+SMOKE OK: 指令终态 SUCCESS
+== 6. 幂等回放：同 key 重复下发应返回同一 command_id ==
+SMOKE OK: 重复下发返回同一 command_id
+== 7. 离线设备必须明确失败 ==
+SMOKE OK: 离线设备返回 FAILED/DEVICE_OFFLINE
+
+SMOKE PASSED
+```
+
+### 0.3 并发幂等验证（同一 idempotency_key 并发 30 次）
+
+```
+$ java -cp build/classes c2d.ServerMain --port 18091 &
+$ python3 scripts/load_demo.py --url http://127.0.0.1:18091 --count 30
+并发/重复调用次数: 30
+成功受理次数    : 30
+返回的 command_id 列表: ['cmd_74097c15f4a984d0']
+唯一 command_id 数量 : 1
+每个 id 的出现次数     : {'cmd_74097c15f4a984d0': 30}
+LOAD DEMO PASSED: 同一 idempotency_key 只产生一个 command_id
+```
+
+（退出码 0；唯一 `command_id` 数量为 **1**，即题面第 6.B 要求的期望值。）
+
 ## 1. 目录
 
 ```
